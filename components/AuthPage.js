@@ -1,3 +1,4 @@
+"use client";
 import React, { useState } from "react";
 import {
   DollarSign,
@@ -15,6 +16,9 @@ import {
 const AuthPage = ({ onBack, onLogin }) => {
   const [isSignUp, setIsSignUp] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
+
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -23,17 +27,86 @@ const AuthPage = ({ onBack, onLogin }) => {
   });
 
   const handleInputChange = (e) => {
+    setError("");
     setFormData({
       ...formData,
       [e.target.name]: e.target.value,
     });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Simulate successful login/signup
-    console.log(formData);
-    onLogin();
+    setError("");
+
+    // Basic client-side validation
+    if (!formData.email || !formData.password || (isSignUp && !formData.name)) {
+      setError("Please fill all required fields.");
+      return;
+    }
+    if (isSignUp && formData.password !== formData.confirmPassword) {
+      setError("Passwords do not match.");
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      const url = isSignUp ? "/api/auth/signup" : "/api/auth/login";
+      const payload = isSignUp
+        ? {
+            name: formData.name,
+            email: formData.email,
+            password: formData.password,
+          }
+        : { email: formData.email, password: formData.password };
+
+      const res = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        // backend error message fallback
+        setError(data?.error || "Authentication failed");
+        setIsLoading(false);
+        return;
+      }
+
+      // Example response: { token, user: { email, name } }
+      const { token, user } = data;
+
+      if (!token) {
+        setError("No token returned from server");
+        setIsLoading(false);
+        return;
+      }
+
+      // Store token (consider httpOnly cookie in production instead)
+      if (typeof window !== "undefined") {
+        localStorage.setItem("expenseflow_token", token);
+        try {
+          localStorage.setItem(
+            "expenseflow_user",
+            JSON.stringify(user || { email: formData.email })
+          );
+        } catch (err) {
+          // ignore storage errors
+        }
+      }
+
+      // Notify parent that login was successful and close auth UI
+      // calling onLogin first, then onBack to make parent update state & close modal/page
+      if (typeof onLogin === "function") onLogin();
+      if (typeof onBack === "function") onBack();
+    } catch (err) {
+      console.error("Auth request failed:", err);
+      setError("Network error. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const benefits = [
@@ -245,12 +318,24 @@ const AuthPage = ({ onBack, onLogin }) => {
                 </div>
               )}
 
+              {/* Error */}
+              {error && <div className="text-sm text-red-600">{error}</div>}
+
               {/* Submit Button */}
               <button
                 type="submit"
-                className="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white py-3 rounded-lg font-semibold hover:shadow-lg transition-all duration-300 transform hover:-translate-y-0.5"
+                disabled={isLoading}
+                className={`w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white py-3 rounded-lg font-semibold hover:shadow-lg transition-all duration-300 transform hover:-translate-y-0.5 ${
+                  isLoading ? "opacity-70 cursor-not-allowed" : ""
+                }`}
               >
-                {isSignUp ? "Create Account" : "Sign In"}
+                {isLoading
+                  ? isSignUp
+                    ? "Creating..."
+                    : "Signing in..."
+                  : isSignUp
+                  ? "Create Account"
+                  : "Sign In"}
               </button>
 
               {/* Divider */}
@@ -265,12 +350,13 @@ const AuthPage = ({ onBack, onLogin }) => {
                 </div>
               </div>
 
-              {/* Social Login Buttons */}
+              {/* Social Login Buttons - left unchanged */}
               <div className="grid grid-cols-2 gap-4">
                 <button
                   type="button"
                   className="flex items-center justify-center px-4 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
                 >
+                  {/* Google svg */}
                   <svg
                     className="w-5 h-5 mr-2"
                     viewBox="0 0 24 24"
@@ -298,6 +384,7 @@ const AuthPage = ({ onBack, onLogin }) => {
                   type="button"
                   className="flex items-center justify-center px-4 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
                 >
+                  {/* Facebook svg */}
                   <svg
                     className="w-5 h-5 mr-2"
                     fill="currentColor"
@@ -317,7 +404,10 @@ const AuthPage = ({ onBack, onLogin }) => {
                     : "Don't have an account?"}
                   <button
                     type="button"
-                    onClick={() => setIsSignUp(!isSignUp)}
+                    onClick={() => {
+                      setError("");
+                      setIsSignUp(!isSignUp);
+                    }}
                     className="ml-2 text-blue-600 hover:text-blue-700 font-semibold transition-colors"
                   >
                     {isSignUp ? "Sign In" : "Sign Up"}

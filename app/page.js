@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import AuthPage from "../components/AuthPage";
 import Dashboard from "../components/Dashboard";
 import {
@@ -23,6 +23,21 @@ function LandingPage() {
   const [showAuth, setShowAuth] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
+  useEffect(() => {
+    try {
+      const token =
+        typeof window !== "undefined" &&
+        localStorage.getItem("expenseflow_token");
+      if (token) {
+        setIsLoggedIn(true);
+        setShowAuth(false);
+      }
+    } catch (err) {
+      // ignore storage errors
+      console.warn("Could not access localStorage:", err);
+    }
+  }, []);
+
   if (showAuth) {
     return (
       <AuthPage
@@ -35,7 +50,14 @@ function LandingPage() {
     );
   }
   if (isLoggedIn) {
-    return <Dashboard onLogout={() => setIsLoggedIn(false)} />;
+    return (
+      <Dashboard
+        onLogout={() => {
+          localStorage.removeItem("expenseflow_token");
+          setIsLoggedIn(false);
+        }}
+      />
+    );
   }
 
   const features = [
