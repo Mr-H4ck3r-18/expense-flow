@@ -1,14 +1,30 @@
-// lib/auth.js
+// lib/auth.ts
 import jwt from "jsonwebtoken";
-import { NextResponse } from "next/server";
+import { User } from "@/types";
 
 const JWT_SECRET = process.env.JWT_SECRET || "dev-secret";
 
-export function verifyTokenFromReq(req) {
+export interface DecodedToken {
+  email: string;
+  name: string;
+  iat: number;
+  exp: number;
+}
+
+// Helper to add status property to Error
+class AuthError extends Error {
+  status: number;
+  constructor(message: string, status: number) {
+    super(message);
+    this.status = status;
+  }
+}
+
+export function verifyTokenFromReq(req: Request): DecodedToken {
   // Next.js server request in app router -> req is a Request
   // Try Authorization header
   const authHeader = req.headers.get("authorization");
-  let token = null;
+  let token: string | null = null;
 
   if (authHeader && authHeader.startsWith("Bearer ")) {
     token = authHeader.split(" ")[1];
@@ -22,17 +38,13 @@ export function verifyTokenFromReq(req) {
   }
 
   if (!token) {
-    const err = new Error("Missing auth token");
-    err.status = 401;
-    throw err;
+    throw new AuthError("Missing auth token", 401);
   }
 
   try {
-    const decoded = jwt.verify(token, JWT_SECRET);
+    const decoded = jwt.verify(token, JWT_SECRET) as DecodedToken;
     return decoded; // { email, name, iat, exp }
   } catch (err) {
-    const e = new Error("Invalid or expired token");
-    e.status = 401;
-    throw e;
+    throw new AuthError("Invalid or expired token", 401);
   }
 }

@@ -1,7 +1,6 @@
 "use client";
-import { useState, useEffect } from "react";
-import AuthPage from "../components/AuthPage";
-import Dashboard from "../components/Dashboard";
+import React, { useState } from "react";
+import Link from "next/link";
 import {
   TrendingUp,
   PieChart,
@@ -20,45 +19,6 @@ import {
 
 function LandingPage() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [showAuth, setShowAuth] = useState(false);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-
-  useEffect(() => {
-    try {
-      const token =
-        typeof window !== "undefined" &&
-        localStorage.getItem("expenseflow_token");
-      if (token) {
-        setIsLoggedIn(true);
-        setShowAuth(false);
-      }
-    } catch (err) {
-      // ignore storage errors
-      console.warn("Could not access localStorage:", err);
-    }
-  }, []);
-
-  if (showAuth) {
-    return (
-      <AuthPage
-        onBack={() => setShowAuth(false)}
-        onLogin={() => {
-          setIsLoggedIn(true);
-          setShowAuth(false);
-        }}
-      />
-    );
-  }
-  if (isLoggedIn) {
-    return (
-      <Dashboard
-        onLogout={() => {
-          localStorage.removeItem("expenseflow_token");
-          setIsLoggedIn(false);
-        }}
-      />
-    );
-  }
 
   const features = [
     {
@@ -142,12 +102,18 @@ function LandingPage() {
               >
                 Pricing
               </a>
-              <button
+              <Link
+                href="#aboutus"
+                className="text-gray-600 hover:text-gray-900 transition-colors"
+              >
+                About us
+              </Link>
+              <Link
+                href="/signup"
                 className="bg-gradient-to-r from-blue-500 to-purple-600 text-white px-6 py-2 rounded-lg hover:shadow-lg transition-all duration-300 transform hover:-translate-y-0.5"
-                onClick={() => setShowAuth(true)}
               >
                 Get Started
-              </button>
+              </Link>
             </div>
 
             <button
@@ -185,9 +151,18 @@ function LandingPage() {
               >
                 Pricing
               </a>
-              <button className="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white px-6 py-2 rounded-lg">
+              <Link
+                href="#aboutus"
+                className="block text-gray-600 hover:text-gray-900"
+              >
+                About us
+              </Link>
+              <Link
+                href="/signup"
+                className="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white px-6 py-2 rounded-lg block text-center"
+              >
                 Get Started
-              </button>
+              </Link>
             </div>
           </div>
         )}
@@ -209,10 +184,13 @@ function LandingPage() {
               financial goals with our powerful expense tracking platform.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-              <button className="bg-gradient-to-r from-blue-500 to-purple-600 text-white px-8 py-4 rounded-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 flex items-center gap-2">
+              <Link
+                href="/signup"
+                className="bg-gradient-to-r from-blue-500 to-purple-600 text-white px-8 py-4 rounded-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 flex items-center gap-2"
+              >
                 Start Free Trial
                 <ArrowRight className="w-5 h-5" />
-              </button>
+              </Link>
               <button className="text-gray-700 px-8 py-4 rounded-lg border border-gray-300 hover:border-gray-400 transition-colors">
                 Watch Demo
               </button>
@@ -456,7 +434,7 @@ function LandingPage() {
       </section>
 
       {/* Benefits Section */}
-      <section className="py-20 bg-white">
+      <section id="aboutus" className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
             <div>
@@ -480,10 +458,13 @@ function LandingPage() {
                 ))}
               </div>
 
-              <button className="mt-8 bg-gradient-to-r from-blue-500 to-purple-600 text-white px-8 py-4 rounded-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 flex items-center gap-2">
+              <Link
+                href="/signup"
+                className="mt-8 bg-gradient-to-r from-blue-500 to-purple-600 text-white px-8 py-4 rounded-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 flex items-center gap-2 max-w-fit"
+              >
                 Get Started Today
                 <ArrowRight className="w-5 h-5" />
-              </button>
+              </Link>
             </div>
 
             <div className="bg-gradient-to-br from-blue-50 to-purple-50 rounded-2xl p-8">
@@ -534,10 +515,13 @@ function LandingPage() {
             can be.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <button className="bg-white text-blue-600 px-8 py-4 rounded-lg font-semibold hover:bg-gray-50 transition-colors flex items-center justify-center gap-2">
+            <Link
+              href="/signup"
+              className="bg-white text-blue-600 px-8 py-4 rounded-lg font-semibold hover:bg-gray-50 transition-colors flex items-center justify-center gap-2"
+            >
               <Zap className="w-5 h-5" />
               Start Free Trial
-            </button>
+            </Link>
             <button className="border border-white text-white px-8 py-4 rounded-lg hover:bg-white hover:text-blue-600 transition-colors">
               Contact Sales
             </button>

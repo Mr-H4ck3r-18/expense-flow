@@ -1,7 +1,9 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
 import {
-  DollarSign,
+  IndianRupee,
   Mail,
   Lock,
   User,
@@ -13,11 +15,20 @@ import {
   Zap,
 } from "lucide-react";
 
-const AuthPage = ({ onBack, onLogin }) => {
-  const [isSignUp, setIsSignUp] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState("");
+interface AuthPageProps {
+  initialMode?: "login" | "signup";
+}
+
+const AuthPage: React.FC<AuthPageProps> = ({ initialMode = "login" }) => {
+  const router = useRouter();
+  const [isSignUp, setIsSignUp] = useState<boolean>(initialMode === "signup");
+  const [showPassword, setShowPassword] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string>("");
+
+  useEffect(() => {
+    setIsSignUp(initialMode === "signup");
+  }, [initialMode]);
 
   const [formData, setFormData] = useState({
     name: "",
@@ -26,7 +37,7 @@ const AuthPage = ({ onBack, onLogin }) => {
     confirmPassword: "",
   });
 
-  const handleInputChange = (e) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setError("");
     setFormData({
       ...formData,
@@ -34,11 +45,10 @@ const AuthPage = ({ onBack, onLogin }) => {
     });
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
 
-    // Basic client-side validation
     if (!formData.email || !formData.password || (isSignUp && !formData.name)) {
       setError("Please fill all required fields.");
       return;
@@ -54,10 +64,10 @@ const AuthPage = ({ onBack, onLogin }) => {
       const url = isSignUp ? "/api/auth/signup" : "/api/auth/login";
       const payload = isSignUp
         ? {
-            name: formData.name,
-            email: formData.email,
-            password: formData.password,
-          }
+          name: formData.name,
+          email: formData.email,
+          password: formData.password,
+        }
         : { email: formData.email, password: formData.password };
 
       const res = await fetch(url, {
@@ -69,42 +79,18 @@ const AuthPage = ({ onBack, onLogin }) => {
       const data = await res.json();
 
       if (!res.ok) {
-        // backend error message fallback
         setError(data?.error || "Authentication failed");
         setIsLoading(false);
         return;
       }
 
-      // Example response: { token, user: { email, name } }
-      const { token, user } = data;
+      // Success - Redirect to dashboard (cookie is set by server)
+      router.push("/dashboard");
+      router.refresh();
 
-      if (!token) {
-        setError("No token returned from server");
-        setIsLoading(false);
-        return;
-      }
-
-      // Store token (consider httpOnly cookie in production instead)
-      if (typeof window !== "undefined") {
-        localStorage.setItem("expenseflow_token", token);
-        try {
-          localStorage.setItem(
-            "expenseflow_user",
-            JSON.stringify(user || { email: formData.email })
-          );
-        } catch (err) {
-          // ignore storage errors
-        }
-      }
-
-      // Notify parent that login was successful and close auth UI
-      // calling onLogin first, then onBack to make parent update state & close modal/page
-      if (typeof onLogin === "function") onLogin();
-      if (typeof onBack === "function") onBack();
     } catch (err) {
       console.error("Auth request failed:", err);
       setError("Network error. Please try again.");
-    } finally {
       setIsLoading(false);
     }
   };
@@ -132,7 +118,7 @@ const AuthPage = ({ onBack, onLogin }) => {
           <div className="animate-fade-in-up">
             <div className="flex items-center space-x-3 mb-8">
               <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center">
-                <DollarSign className="w-7 h-7 text-white" />
+                <IndianRupee className="w-7 h-7 text-white" />
               </div>
               <span className="text-3xl font-bold text-gray-900">
                 ExpenseFlow
@@ -168,11 +154,11 @@ const AuthPage = ({ onBack, onLogin }) => {
           <div className="bg-white rounded-2xl p-6 shadow-lg animate-fade-in-up animation-delay-400">
             <div className="flex items-center gap-4 mb-4">
               <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-semibold">
-                MJ
+                AJ
               </div>
               <div>
                 <div className="font-semibold text-gray-900">
-                  Michael Johnson
+                  Annam Johnson
                 </div>
                 <div className="text-sm text-gray-500">
                   Small Business Owner
@@ -180,7 +166,7 @@ const AuthPage = ({ onBack, onLogin }) => {
               </div>
             </div>
             <p className="text-gray-600 italic">
-              "ExpenseFlow helped me save $2,000 in the first month by
+              "ExpenseFlow helped me save ₹5,000 in the first month by
               identifying unnecessary spending patterns I never noticed before."
             </p>
           </div>
@@ -190,13 +176,13 @@ const AuthPage = ({ onBack, onLogin }) => {
         <div className="w-full max-w-md mx-auto">
           <div className="bg-white rounded-2xl shadow-2xl p-8 animate-slide-in-right">
             {/* Back Button */}
-            <button
-              onClick={onBack}
+            <Link
+              href="/"
               className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors mb-6 group"
             >
               <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
               Back to Home
-            </button>
+            </Link>
 
             {/* Form Header */}
             <div className="text-center mb-8">
@@ -325,17 +311,16 @@ const AuthPage = ({ onBack, onLogin }) => {
               <button
                 type="submit"
                 disabled={isLoading}
-                className={`w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white py-3 rounded-lg font-semibold hover:shadow-lg transition-all duration-300 transform hover:-translate-y-0.5 ${
-                  isLoading ? "opacity-70 cursor-not-allowed" : ""
-                }`}
+                className={`w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white py-3 rounded-lg font-semibold hover:shadow-lg transition-all duration-300 transform hover:-translate-y-0.5 ${isLoading ? "opacity-70 cursor-not-allowed" : ""
+                  }`}
               >
                 {isLoading
                   ? isSignUp
                     ? "Creating..."
                     : "Signing in..."
                   : isSignUp
-                  ? "Create Account"
-                  : "Sign In"}
+                    ? "Create Account"
+                    : "Sign In"}
               </button>
 
               {/* Divider */}
@@ -396,12 +381,16 @@ const AuthPage = ({ onBack, onLogin }) => {
                 </button>
               </div>
 
-              {/* Toggle Sign In/Sign Up */}
+              {/* Toggle Sign In/Sign Up - Optional: Link to other page */}
               <div className="text-center">
                 <p className="text-gray-600">
                   {isSignUp
                     ? "Already have an account?"
                     : "Don't have an account?"}
+                  {/* Use plain button for state toggle if we are staying on same component, 
+                      OR Link to other route. Since we are using routed pages, let's use Link if we split,
+                      but for now keeping internal toggle is ok IF we update URL path.
+                      Currently just toggling state. */}
                   <button
                     type="button"
                     onClick={() => {

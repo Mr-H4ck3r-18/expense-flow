@@ -1,5 +1,5 @@
-// lib/mongodb.js
-import { MongoClient } from "mongodb";
+// lib/mongodb.ts
+import { MongoClient, Db } from "mongodb";
 
 const uri = process.env.MONGODB_URI;
 const dbName = process.env.MONGODB_DB || "expense-tracker";
@@ -8,17 +8,22 @@ if (!uri) {
   throw new Error("Missing MONGODB_URI in environment variables");
 }
 
+// Global type augmentation to avoid TS errors on global.__mongo
+declare global {
+  var __mongo: { client: MongoClient; db: Db } | undefined;
+}
+
 /**
  * Cached client to prevent connection storm during dev hot reloads.
  * global.__mongo = { client, db }
  */
-async function connectDB() {
+async function connectDB(): Promise<Db> {
   try {
     if (global.__mongo && global.__mongo.client && global.__mongo.db) {
       return global.__mongo.db;
     }
 
-    const client = new MongoClient(uri, {
+    const client = new MongoClient(uri!, {
       // faster failure in dev so we see errors quickly
       connectTimeoutMS: 10000,
       serverSelectionTimeoutMS: 10000,
@@ -33,7 +38,7 @@ async function connectDB() {
   } catch (err) {
     console.error(
       "[lib/mongodb] connect error:",
-      err && err.stack ? err.stack : err
+      err instanceof Error ? err.stack : err
     );
     throw err; // rethrow so callers can respond accordingly
   }
